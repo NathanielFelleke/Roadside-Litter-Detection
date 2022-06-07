@@ -5,27 +5,22 @@ console.log(trashData)
 var script = document.createElement('script');
 let map;
 
-
-//let docRef = db.collection("trashlocation");
-//let trashPoints = docRef.get();
-
-
-
 script.src = 'https://maps.googleapis.com/maps/api/js?key=' + keys.googleMapsApiKey + '&libraries=visualization&callback=initMap';
 
-script.async = false;
-script.defer = false;
+script.async = true;
 document.head.appendChild(script);
-// Attach your callback function to the `window` object
+
 let heatmapData = [];
 let heatmapDataWeighted = [];
 var querySnapshot;
+
 window.addEventListener("DOMContentLoaded", async (e) => {
   querySnapshot = await trashData();
   console.log("query")
   visualize()
   
 })
+
 window.initMap = function(){
   console.log("initMap")
 }
@@ -58,13 +53,3 @@ function visualize(){
 
 }
 
-
-// Append the 'script' element to 'head'
-
-
-/*
-const loader = new Loader({
-    apiKey: keys.googleMapsApiKey,
-    version: "weekly",
-    libraries: ["visualization"]
-});*/
