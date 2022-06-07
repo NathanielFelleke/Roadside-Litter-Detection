@@ -31,8 +31,6 @@ req["outbound"] = 30
 req["inbound"] = 720
 rsp = card.Transaction(req)
 
-
-
 req = {"req": "hub.sync"}
 rsp = card.Transaction(req)
 
@@ -61,9 +59,6 @@ def get_webcams():
                 port_ids.append(port)
             camera.release()
     return port_ids
-
-
-    
 
 def sigint_handler(sig, frame):
     print('Interrupted')
@@ -130,106 +125,60 @@ def main():
             else:
                 raise Exception("Couldn't initialize selected camera.")
 
-            next_frame = 0 # limit to ~10 fps here
+            next_frame = 0 
             
             for img in runner.get_frames(videoCaptureDeviceId):
                 if (next_frame > now()):
                     time.sleep((next_frame - now()) / 1000)
                 
-                #start  = time.time()
 
                 
                 (h,w) = img.shape[:2]
                 (cX, cY) = (w//2, h//2)
-
-                fullImage = cv2.resize(img, (160, 160), interpolation=cv2.INTER_AREA)
-                leftImage = cv2.resize(img[0:h, 0:cX], (160,160), interpolation=cv2.INTER_AREA)
-                rightImage = cv2.resize(img[0:h, cX:w], (160,160), interpolation=cv2.INTER_AREA)
                 
-                #topLeft = cv2.resize(img[0:cY, 0:cX], (96,96),interpolation=cv2.INTER_AREA)
-                #topRight = cv2.resize(img[0:cY, cX:w], (96,96),interpolation=cv2.INTER_AREA)
-                #bottomLeft = cv2.resize(img[cY:h, 0:cX], (96,96),interpolation=cv2.INTER_AREA)
-                #bottomRight = cv2.resize(img[cY:h, cX:w], (96,96),interpolation=cv2.INTER_AREA)
-
-                # make two cuts from the image, one on the left and one on the right
-
-                #end1 = time.time()
-                
-                features = generate_features(fullImage)
-                features_left = generate_features(leftImage)
-                features_right = generate_features(rightImage)
+                #cut the image into four parts
+                topLeft = cv2.resize(img[0:cY, 0:cX], (160,160),interpolation=cv2.INTER_AREA)
+                topRight = cv2.resize(img[0:cY, cX:w], (160,160),interpolation=cv2.INTER_AREA)
+                bottomLeft = cv2.resize(img[cY:h, 0:cX], (160,160),interpolation=cv2.INTER_AREA)
+                bottomRight = cv2.resize(img[cY:h, cX:w], (160,160),interpolation=cv2.INTER_AREA)
                 
                 
-                #features_tl = generate_features(topLeft)
-                #features_tr =generate_features(topRight)
-                #features_bl = generate_features(bottomLeft)
-                #features_br = generate_features(bottomRight)
-                
-               # end2 = time.time()
-                #print(features_l)
-                # classify both\
+                features_tl = generate_features(topLeft)
+                features_tr =generate_features(topRight)
+                features_bl = generate_features(bottomLeft)
+                features_br = generate_features(bottomRight)
                     
-                res = runner.classify(features)
-                res_left = runner.classify(features_left)
-                res_right = runner.classify(features_right)
                 
-                #res_tl = runner.classify(features_tl,features_tl)
-                #res_tr = runner.classify(features_tr)
-                #res_bl = runner.classify(features_bl)
-                #res_br = runner.classify(features_br)
+                res_tl = runner.classify(features_tl,features_tl)
+                res_tr = runner.classify(features_tr)
+                res_bl = runner.classify(features_bl)
+                res_br = runner.classify(features_br)
 
-                
-                #end3 = time.time()
-
-                #print("Resize time: ", + (end1-start))
-                #print("Features time: ", + (end2-end1))
-                #print("Classify time: ", + (end3-end2))
-                #print("Total time: ", + (end3-start))
-             
-                #cv2.imwrite('debug_tl.jpg', cv2.cvtColor(cropped_tl, cv2.COLOR_RGB2BGR))
-                #cv2.imwrite('debug_tr.jpg', cv2.cvtColor(cropped_tr, cv2.COLOR_RGB2BGR))
-                #cv2.imwrite('debug_bl.jpg', cv2.cvtColor(cropped_bl, cv2.COLOR_RGB2BGR))
-                #cv2.imwrite('debug_br.jpg', cv2.cvtColor(cropped_br, cv2.COLOR_RGB2BGR))
-
-
-                #cv2.imwrite('debug_r.jpg', cv2.cvtColor(cropped_r, cv2.COLOR_RGB2BGR))
-
-                def print_classification(res, tag):
+                def determineClassification(res, tag):
                     if "classification" in res["result"].keys():
                         for label in labels:
                             score = res['result']['classification'][label]
-                            if(label=='a lot of trash' and score>0.4):
+                            if(label=='a lot of trash' and score>0.5):
                                 req = {"req": "card.location"}
                                 rsp = card.Transaction(req)
                                 
-                                print(tag + " : " + str(score))
-                                
-                                outfile = '%s/%s.jpg' % ("debug", "trash" + tag + str(datetime.now()))
-                                cv2.imwrite(outfile,  cv2.cvtColor(img,cv2.COLOR_RGB2BGR))
-                                
                                 note.add(card,
                                         file="trash.qo",
-                                        body={"trash": score, "lat": rsp["lat"], "lon": rsp["lon"]})
-                                
-                                
-                            #if(label=='a lot of trash'):
-                                
-                        #print('', flush=True)
+                                        body={"trash": score, "lat": rsp["lat"], "lon": rsp["lon"]}) #send the trash classification using the Notecard API
+                                if(debug):
+                                    print(tag + " : " + str(score))
+                                    outfile = '%s/%s.jpg' % ("debug", "trash" + tag + str(datetime.now())) #save the image of trash
+                                    cv2.imwrite(outfile,  cv2.cvtColor(img,cv2.COLOR_RGB2BGR))
 
-                print_classification(res_left, 'LEFT')
-                print_classification(res_right, 'RIGHT')
-                print_classification(res, 'FULL')
+
+                determineClassification(res_tl, 'TOPLEFT')
+                determineClassification(res_tr, 'TOPRIGHT')
+                determineClassification(res_bl, 'BOTTOMLEFT')
+                determineClassification(res_br, 'BOTTOMRIGHT')
                 next_frame = now()
 
         finally:
             if (runner):
                 runner.stop()
-
-
-
-
-#while not gpsActive():
-    #print("Waiting for GPS...")
-    #time.sleep(2)
     
 main()
