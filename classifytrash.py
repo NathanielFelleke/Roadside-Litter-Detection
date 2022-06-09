@@ -178,8 +178,9 @@ def main():
 
 
 
-while not gpsActive():
+while not gpsActive(): #wait for gps to be active before starting the script
     print("waiting for gps")
     time.sleep(2)
-       
+    
+print("starting")   
 main()
