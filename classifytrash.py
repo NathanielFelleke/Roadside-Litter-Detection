@@ -93,9 +93,11 @@ def determineClassification(res, tag, debug=False):
                                 req = {"req": "card.location"}
                                 rsp = card.Transaction(req)
                                 
+                                #send the trash classification using the Notecard API
                                 note.add(card,
                                         file="trash.qo",
-                                        body={"trash": score, "lat": rsp["lat"], "lon": rsp["lon"]}) #send the trash classification using the Notecard API
+                                        body={"trash": score, "lat": rsp["lat"], "lon": rsp["lon"]}) 
+                                
                                 if(debug):
                                     print(tag + " : " + str(score))
                                     outfile = '%s/%s.jpg' % ("debug", "trash" + tag + str(datetime.now())) #save the image of trash
