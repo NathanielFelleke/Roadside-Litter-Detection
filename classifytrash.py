@@ -157,12 +157,12 @@ def main():
                 
                 #generate features for all parts
                 features_tl = generate_features(topLeft)
-                features_tr =generate_features(topRight)
+                features_tr = generate_features(topRight)
                 features_bl = generate_features(bottomLeft)
                 features_br = generate_features(bottomRight)
                     
                 #classify all parts
-                res_tl = runner.classify(features_tl,features_tl)
+                res_tl = runner.classify(features_tl)
                 res_tr = runner.classify(features_tr)
                 res_bl = runner.classify(features_bl)
                 res_br = runner.classify(features_br)
