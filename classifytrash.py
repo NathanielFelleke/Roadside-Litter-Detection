@@ -84,6 +84,22 @@ def gpsActive():
         return True
     else:
         return False
+    
+def determineClassification(res, tag, debug=False):
+                    if "classification" in res["result"].keys():
+                        for label in labels:
+                            score = res['result']['classification'][label]
+                            if(label=='a lot of trash' and score>0.5):
+                                req = {"req": "card.location"}
+                                rsp = card.Transaction(req)
+                                
+                                note.add(card,
+                                        file="trash.qo",
+                                        body={"trash": score, "lat": rsp["lat"], "lon": rsp["lon"]}) #send the trash classification using the Notecard API
+                                if(debug):
+                                    print(tag + " : " + str(score))
+                                    outfile = '%s/%s.jpg' % ("debug", "trash" + tag + str(datetime.now())) #save the image of trash
+                                    cv2.imwrite(outfile,  cv2.cvtColor(img,cv2.COLOR_RGB2BGR))
 
 def main():
     
@@ -137,33 +153,17 @@ def main():
                 bottomLeft = cv2.resize(img[cY:h, 0:cX], (160,160),interpolation=cv2.INTER_AREA)
                 bottomRight = cv2.resize(img[cY:h, cX:w], (160,160),interpolation=cv2.INTER_AREA)
                 
-                
+                #generate features for all parts
                 features_tl = generate_features(topLeft)
                 features_tr =generate_features(topRight)
                 features_bl = generate_features(bottomLeft)
                 features_br = generate_features(bottomRight)
                     
-                
+                #classify all parts
                 res_tl = runner.classify(features_tl,features_tl)
                 res_tr = runner.classify(features_tr)
                 res_bl = runner.classify(features_bl)
                 res_br = runner.classify(features_br)
-
-                def determineClassification(res, tag):
-                    if "classification" in res["result"].keys():
-                        for label in labels:
-                            score = res['result']['classification'][label]
-                            if(label=='a lot of trash' and score>0.5):
-                                req = {"req": "card.location"}
-                                rsp = card.Transaction(req)
-                                
-                                note.add(card,
-                                        file="trash.qo",
-                                        body={"trash": score, "lat": rsp["lat"], "lon": rsp["lon"]}) #send the trash classification using the Notecard API
-                                if(debug):
-                                    print(tag + " : " + str(score))
-                                    outfile = '%s/%s.jpg' % ("debug", "trash" + tag + str(datetime.now())) #save the image of trash
-                                    cv2.imwrite(outfile,  cv2.cvtColor(img,cv2.COLOR_RGB2BGR))
 
 
                 determineClassification(res_tl, 'TOPLEFT')
