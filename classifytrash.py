@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-
-#import device_patches       # Device specific patches for Jetson Nano (needs to be before importing cv2)
-
 from lib2to3.pgen2.tokenize import generate_tokens
 from pyexpat import features
 from string import capwords
@@ -21,7 +17,6 @@ import keys
 port = I2C("/dev/i2c-1")
 
 card = notecard.OpenI2C(port, 0, 0)
-
 
 #hub.set(card,product=keys.productUID,mode="continous",outbound=30,inbound=720)
 req = {"req": "hub.set"}
@@ -180,5 +175,11 @@ def main():
         finally:
             if (runner):
                 runner.stop()
-    
+
+
+
+while not gpsActive():
+    print("waiting for gps")
+    time.sleep(2)
+       
 main()
