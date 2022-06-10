@@ -89,7 +89,9 @@ def determineClassification(res, tag, debug=False):
                     if "classification" in res["result"].keys():
                         for label in labels:
                             score = res['result']['classification'][label]
-                            if(label=='a lot of trash' and score>0.5):
+                            if(label=='trash' and score>0.5):
+                                
+                                #get gps location
                                 req = {"req": "card.location"}
                                 rsp = card.Transaction(req)
                                 
@@ -182,7 +184,7 @@ def main():
 
 while not gpsActive(): #wait for gps to be active before starting the script
     print("waiting for gps")
-    time.sleep(2)
+    time.sleep(5)
     
 print("starting")   
 main()
