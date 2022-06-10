@@ -146,8 +146,6 @@ def main():
                 if (next_frame > now()):
                     time.sleep((next_frame - now()) / 1000)
                 
-
-                
                 (h,w) = img.shape[:2]
                 (cX, cY) = (w//2, h//2)
                 
@@ -179,7 +177,6 @@ def main():
         finally:
             if (runner):
                 runner.stop()
-
 
 
 while not gpsActive(): #wait for gps to be active before starting the script
