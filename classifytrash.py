@@ -14,6 +14,8 @@ from notecard import hub, note, card
 from periphery import I2C
 import keys
 
+debug = False #set to true to save images of trash
+
 port = I2C("/dev/i2c-1")
 
 card = notecard.OpenI2C(port, 0, 0)
@@ -85,26 +87,6 @@ def gpsActive():
     else:
         return False
     
-def determineClassification(res, tag, debug=False):
-                    if "classification" in res["result"].keys():
-                        for label in labels:
-                            score = res['result']['classification'][label]
-                            if(label=='trash' and score>0.5):
-                                
-                                #get gps location
-                                req = {"req": "card.location"}
-                                rsp = card.Transaction(req)
-                                
-                                #send the trash classification using the Notecard API
-                                note.add(card,
-                                        file="trash.qo",
-                                        body={"trash": score, "lat": rsp["lat"], "lon": rsp["lon"]}) 
-                                
-                                if(debug):
-                                    print(tag + " : " + str(score))
-                                    outfile = '%s/%s.jpg' % ("debug", "trash" + tag + str(datetime.now())) #save the image of trash
-                                    cv2.imwrite(outfile,  cv2.cvtColor(img,cv2.COLOR_RGB2BGR))
-
 def main():
     
     model = "model.eim"
@@ -146,32 +128,26 @@ def main():
                 if (next_frame > now()):
                     time.sleep((next_frame - now()) / 1000)
                 
-                (h,w) = img.shape[:2]
-                (cX, cY) = (w//2, h//2)
-                
-                #cut the image into four parts
-                topLeft = cv2.resize(img[0:cY, 0:cX], (160,160),interpolation=cv2.INTER_AREA)
-                topRight = cv2.resize(img[0:cY, cX:w], (160,160),interpolation=cv2.INTER_AREA)
-                bottomLeft = cv2.resize(img[cY:h, 0:cX], (160,160),interpolation=cv2.INTER_AREA)
-                bottomRight = cv2.resize(img[cY:h, cX:w], (160,160),interpolation=cv2.INTER_AREA)
-                
-                #generate features for all parts
-                features_tl = generate_features(topLeft)
-                features_tr = generate_features(topRight)
-                features_bl = generate_features(bottomLeft)
-                features_br = generate_features(bottomRight)
-                    
-                #classify all parts
-                res_tl = runner.classify(features_tl)
-                res_tr = runner.classify(features_tr)
-                res_bl = runner.classify(features_bl)
-                res_br = runner.classify(features_br)
+                features = generate_features(cv2.resize(img, (160,160), interpolation=cv2.INTER_AREA))  
 
-
-                determineClassification(res_tl, 'TOPLEFT')
-                determineClassification(res_tr, 'TOPRIGHT')
-                determineClassification(res_bl, 'BOTTOMLEFT')
-                determineClassification(res_br, 'BOTTOMRIGHT')
+                res = runner.classify(features)
+                
+                if "classification" in res["result"].keys():
+                        score = res['result']['classification']['trash']
+                        if score > 0.6:
+                            print("trash: " + str(score))
+                            #get gps location
+                            req = {"req": "card.location"}
+                            rsp = card.Transaction(req)
+                            
+                            #send the trash classification using the Notecard API
+                            note.add(card,
+                                    file="trash.qo",
+                                    body={"trash": score, "lat": rsp["lat"], "lon": rsp["lon"]}) 
+                            
+                            if debug:
+                                outfile = '%s/%s.jpg' % ("debug", "trash"  + str(datetime.now())) #save the image of trash
+                                cv2.imwrite(outfile,  cv2.cvtColor(img,cv2.COLOR_RGB2BGR))
                 next_frame = now()
 
         finally:
